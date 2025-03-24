@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: expense-manager-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: expense-manager-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true 
