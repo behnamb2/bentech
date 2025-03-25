@@ -5,9 +5,9 @@ const webpack = require('webpack');
 module.exports = {
   entry: './src/index.js',
   output: {
-    path: path.resolve(__dirname, 'build'),
+    path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
-    publicPath: '/'
+    publicPath: process.env.NODE_ENV === 'production' ? '/expense-manager/' : '/'
   },
   module: {
     rules: [
@@ -24,6 +24,13 @@ module.exports = {
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader']
+      },
+      {
+        test: /\.(ico|png|jpg|jpeg|gif|svg)$/,
+        type: 'asset/resource',
+        generator: {
+          filename: '[name][ext]'
+        }
       }
     ]
   },
@@ -35,7 +42,14 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './public/index.html'
+      template: './public/index.html',
+      filename: 'index.html',
+      inject: true,
+      favicon: './public/favicon.ico',
+      minify: {
+        removeComments: true,
+        collapseWhitespace: true
+      }
     }),
     new webpack.DefinePlugin({
       'process.env': {

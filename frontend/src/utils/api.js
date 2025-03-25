@@ -1,119 +1,149 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://your-username.github.io/expense-manager/api'  // GitHub Pages URL
+  : 'http://localhost:5001';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    'Accept': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : ''
   };
+};
+
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+    console.error('API error response:', errorData);
+    throw new Error(errorData.message || `Request failed with status: ${response.status}`);
+  }
+  return response.json();
+};
+
+const fetchConfig = {
+  credentials: 'include',
+  mode: 'cors',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
 };
 
 export const login = async (email, password) => {
   try {
+    console.log('Attempting login to:', `${API_BASE_URL}/auth/login`);
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      ...fetchConfig,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({ email, password })
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Login failed');
-    }
-
-    const data = await response.json();
+    const data = await handleResponse(response);
     if (!data.token) {
+      console.error('Invalid response data:', data);
       throw new Error('Invalid response from server');
     }
-
     return data;
   } catch (error) {
-    throw new Error(error.message || 'Login failed');
+    console.error('Login error:', error);
+    throw new Error(error.message || 'Login failed. Please check your connection and try again.');
   }
 };
 
 export const register = async (name, email, password) => {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ name, email, password })
-  });
-  return response.json();
+  try {
+    console.log('Attempting registration to:', `${API_BASE_URL}/auth/register`);
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      ...fetchConfig,
+      method: 'POST',
+      body: JSON.stringify({ name, email, password })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw new Error(error.message || 'Registration failed. Please try again.');
+  }
 };
 
 export const getExpenses = async () => {
-  const response = await fetch(`${API_BASE_URL}/expenses`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    }
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch expenses');
+  try {
+    const response = await fetch(`${API_BASE_URL}/expenses`, {
+      ...fetchConfig,
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Get expenses error:', error);
+    throw new Error(error.message || 'Failed to fetch expenses');
   }
-  return response.json();
 };
 
 export const addExpense = async (expenseData) => {
-  const response = await fetch(`${API_BASE_URL}/expenses`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(expenseData)
-  });
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/expenses`, {
+      ...fetchConfig,
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(expenseData)
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Add expense error:', error);
+    throw new Error(error.message || 'Failed to add expense');
+  }
 };
 
 export const getExpense = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    }
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch expense');
+  try {
+    const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
+      ...fetchConfig,
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Get expense error:', error);
+    throw new Error(error.message || 'Failed to fetch expense');
   }
-  return response.json();
 };
 
 export const updateExpense = async (id, expenseData) => {
-  const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    },
-    body: JSON.stringify(expenseData)
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update expense');
+  try {
+    const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
+      ...fetchConfig,
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(expenseData)
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Update expense error:', error);
+    throw new Error(error.message || 'Failed to update expense');
   }
-  return response.json();
 };
 
 export const deleteExpense = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    }
-  });
-  if (!response.ok) {
-    throw new Error('Failed to delete expense');
+  try {
+    const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
+      ...fetchConfig,
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Delete expense error:', error);
+    throw new Error(error.message || 'Failed to delete expense');
   }
-  return response.json();
 };
 
 export const getDashboardData = async () => {
-  const response = await fetch(`${API_BASE_URL}/expenses/dashboard`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    }
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch dashboard data');
+  try {
+    const response = await fetch(`${API_BASE_URL}/expenses/dashboard`, {
+      ...fetchConfig,
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Get dashboard data error:', error);
+    throw new Error(error.message || 'Failed to fetch dashboard data');
   }
-  return response.json();
 }; 
